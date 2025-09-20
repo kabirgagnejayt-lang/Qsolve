@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Q Solve — Homework Helper (Refactored)</title>
+<title>Q Solve — Homework Helper (Mobile Optimized)</title>
 
 <style>
   :root {
@@ -26,11 +26,12 @@
   .brand { display:flex; align-items:center; gap:12px; }
   .logo {
     width:44px; height:44px; border-radius:10px; background:var(--accent-grad); display:flex;
-    align-items:center; justify-content:center; color:white; font-weight:700;
+    align-items:center; justify-content:center; color:white; font-weight:700; flex-shrink: 0;
   }
   .title { font-weight:700; font-size:1rem; }
   .header-avatar {
     width: 44px; height: 44px; border-radius: 10px; object-fit: cover; border: 1px solid rgba(0,0,0,0.05);
+    flex-shrink: 0;
   }
   nav { display:flex; gap:8px; align-items:center; }
   nav button { background:transparent; border:none; padding:8px 10px; border-radius:8px; cursor:pointer; color:var(--muted); }
@@ -38,6 +39,8 @@
   .container { max-width:1100px; margin:18px auto; padding:0 14px; }
   .page { display:none; margin-top:14px; }
   .card { background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); padding:14px; margin-bottom:14px; }
+  .row { display:flex; gap:12px; flex-wrap:wrap; }
+  .col { flex:1; min-width:260px; }
   h1,h2,h3,h4 { margin:8px 0; color:var(--text); }
   p { color:var(--muted); line-height:1.45; }
   .muted { color:var(--muted); font-size:0.95rem; }
@@ -65,6 +68,54 @@
   .ai-answer-container {
     margin-top: 12px; padding: 10px; border-radius: 8px;
     background-color: rgba(79,70,229,0.05); border-left: 3px solid var(--primary);
+  }
+
+  /* ✅ ADDED: Media Query for Mobile Optimization */
+  @media (max-width: 768px) {
+    header {
+      flex-wrap: wrap; /* Allow header items to wrap onto the next line */
+      gap: 16px;
+    }
+
+    nav {
+      width: 100%;
+      order: 3; /* Make nav appear last in the header flow */
+      overflow-x: auto; /* Allow nav to be scrolled horizontally */
+      padding-bottom: 5px; /* Add some space for the scrollbar */
+    }
+    
+    .brand {
+        width: 100%;
+    }
+
+    .btn[data-action="share"] {
+      display: none; /* Hide share button on mobile to save space */
+    }
+
+    .row {
+      flex-direction: column; /* Stack columns vertically */
+      gap: 0;
+    }
+
+    .container {
+      margin: 12px auto;
+      padding: 0 10px;
+    }
+
+    h2 {
+      font-size: 1.5rem; /* Adjust heading sizes for mobile */
+    }
+
+    .btn, input, select, textarea {
+        padding-top: 12px; /* Increase padding for easier tapping */
+        padding-bottom: 12px;
+    }
+
+    #toast {
+        bottom: 80px; /* Position toast above mobile OS navigation */
+        width: 90%;
+        box-sizing: border-box;
+    }
   }
 </style>
 
@@ -402,20 +453,16 @@ function init() {
         showToast("Settings saved!");
     }
     
-    // ✅ CHANGED: This block is updated for instant navigation
     if (action === 'reset-app') {
         if (confirm('This will permanently delete all your data. Are you sure?')) {
             localStorage.clear();
             
-            // Reset the in-memory state to defaults
             App.history = [];
             App.settings = { name: 'Student', avatar:'', theme:'default', fontSize:16, apiKey: '' };
             
-            // Immediately update the UI to reflect the reset state
             applyTheme();
             updateHeaderUI(); 
             
-            // Navigate to the welcome screen without reloading the page
             showPage('welcomeScreen');
             showToast('App has been reset.');
         }
