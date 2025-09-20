@@ -70,7 +70,7 @@
     background-color: rgba(79,70,229,0.05); border-left: 3px solid var(--primary);
   }
 
-  /* ✅ ADDED: Media Query for Mobile Optimization */
+  /* Media Query for Mobile Optimization */
   @media (max-width: 768px) {
     header {
       flex-wrap: wrap; /* Allow header items to wrap onto the next line */
@@ -160,12 +160,16 @@ import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
 /* -------------------------------------------
   App State and Core Functions
 ------------------------------------------- */
+// Default API Key constant
+const DEFAULT_API_KEY = 'AIzaSyDFkqehdCYrwxkwR8TSicSLHZrMnAJ3XXY';
+
 const App = {
   pages: ['welcomeScreen', 'homePage','solvePage','historyPage','settingsPage'],
   dataKey: 'qsolve_data_v3',
   userKey: 'qsolve_user_v3',
   history: [],
-  settings: { name: 'Student', avatar:'', theme:'default', fontSize:16, apiKey: '' },
+  // Added 'useDefaultKey' to settings
+  settings: { name: 'Student', avatar:'', theme:'default', fontSize:16, apiKey: '', useDefaultKey: true },
 };
 
 function saveAll() {
@@ -189,9 +193,10 @@ function showPage(id) {
   const page = document.getElementById(id);
   if(!page) return;
   
-  if (!page.innerHTML.trim()) {
-    const template = document.getElementById(id + "Template");
-    if (template) page.innerHTML = template.innerHTML;
+  // FIX: Always render from template to prevent blank pages on reset
+  const template = document.getElementById(id + "Template");
+  if (template) {
+    page.innerHTML = template.innerHTML;
   }
   page.style.display='block';
 
@@ -229,9 +234,11 @@ function escapeHtml(s) {
   AI and OCR Functions
 ------------------------------------------- */
 async function solveWithGemini(prompt) {
-  const apiKey = App.settings.apiKey;
+  // UPDATED: Logic to choose between default and custom key
+  const apiKey = App.settings.useDefaultKey ? DEFAULT_API_KEY : App.settings.apiKey;
+
   if (!apiKey) {
-    showToast('API Key is not set. Please add one in Settings.', 'error');
+    showToast('API Key is not set. Please choose the default or add your own in Settings.', 'error');
     return "Error: API Key is required.";
   }
   try {
@@ -283,11 +290,18 @@ function updateHeaderUI() {
 }
 
 function updateSettingsPageUI() {
+    // UPDATED: This function now handles the new radio buttons
     document.getElementById('userName').value = App.settings.name || '';
-    document.getElementById('apiKeyInput').value = App.settings.apiKey || '';
     document.getElementById('avatarPreview').src = App.settings.avatar || 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
     document.getElementById('themeSelect').value = App.settings.theme;
     document.getElementById('fontSizeRange').value = App.settings.fontSize;
+    
+    // Set API key input and radio buttons
+    document.getElementById('apiKeyInput').value = App.settings.apiKey || '';
+    const useCustom = !App.settings.useDefaultKey;
+    document.getElementById('settingsUseDefault').checked = !useCustom;
+    document.getElementById('settingsUseCustom').checked = useCustom;
+    document.getElementById('settingsCustomApiKeyContainer').style.display = useCustom ? 'block' : 'none';
 }
 
 function refreshHomePage() {
@@ -382,11 +396,18 @@ function init() {
     if (action === 'navigate') showPage(target.dataset.page);
     
     if (action === 'accept-welcome') {
-        App.settings.name = document.getElementById('setupName').value.trim() || 'Student';
-        App.settings.apiKey = document.getElementById('setupApiKey').value.trim();
-        saveAll();
-        localStorage.setItem('qsolve_first_time_v3', 'true');
-        showPage('homePage');
+      // UPDATED: Logic to save the user's API key choice
+      App.settings.name = document.getElementById('setupName').value.trim() || 'Student';
+      const useDefault = document.getElementById('setupUseDefault').checked;
+      App.settings.useDefaultKey = useDefault;
+      if (!useDefault) {
+          App.settings.apiKey = document.getElementById('setupApiKey').value.trim();
+      } else {
+          App.settings.apiKey = ''; // Clear custom key if default is chosen
+      }
+      saveAll();
+      localStorage.setItem('qsolve_first_time_v3', 'true');
+      showPage('homePage');
     }
 
     if (action === 'run-ocr') {
@@ -446,11 +467,18 @@ function init() {
     }
     
     if (action === 'save-settings') {
-        App.settings.name = document.getElementById('userName').value.trim();
-        App.settings.apiKey = document.getElementById('apiKeyInput').value.trim();
-        saveAll();
-        updateHeaderUI();
-        showToast("Settings saved!");
+      // UPDATED: Logic to save the user's API key choice
+      App.settings.name = document.getElementById('userName').value.trim();
+      const useDefault = document.getElementById('settingsUseDefault').checked;
+      App.settings.useDefaultKey = useDefault;
+       if (!useDefault) {
+          App.settings.apiKey = document.getElementById('apiKeyInput').value.trim();
+      } else {
+          App.settings.apiKey = ''; // Clear custom key if default is chosen
+      }
+      saveAll();
+      updateHeaderUI();
+      showToast("Settings saved!");
     }
     
     if (action === 'reset-app') {
@@ -458,7 +486,8 @@ function init() {
             localStorage.clear();
             
             App.history = [];
-            App.settings = { name: 'Student', avatar:'', theme:'default', fontSize:16, apiKey: '' };
+            // Reset settings to include the new 'useDefaultKey'
+            App.settings = { name: 'Student', avatar:'', theme:'default', fontSize:16, apiKey: '', useDefaultKey: true };
             
             applyTheme();
             updateHeaderUI(); 
@@ -485,6 +514,16 @@ function init() {
         applyTheme();
         saveAll();
     }
+    
+    // ADDED: Event handler to show/hide the custom API key input field
+    if (target.name === 'apiKeyChoiceSetup' || target.name === 'apiKeyChoiceSettings') {
+        const isSetup = target.name === 'apiKeyChoiceSetup';
+        const containerId = isSetup ? 'setupCustomApiKeyContainer' : 'settingsCustomApiKeyContainer';
+        const container = document.getElementById(containerId);
+        if (container) {
+            container.style.display = target.value === 'custom' ? 'block' : 'none';
+        }
+    }
   });
 
   document.body.addEventListener('input', e => {
@@ -507,17 +546,27 @@ init();
 
 <template id="welcomeScreenTemplate">
   <h2>Welcome to Q Solve</h2>
-  <p class="muted">Your personal homework helper. To get started, please set your name and provide a Gemini API key.</p>
+  <p class="muted">Your personal homework helper. To get started, please set your name and choose an API key option.</p>
   <div style="margin-top:20px;">
-      <label>Your Name</label>
-      <input id="setupName" placeholder="e.g., Alex" />
+    <label>Your Name</label>
+    <input id="setupName" placeholder="e.g., Alex" />
   </div>
+  
   <div class="warning-box">
-    <p><strong>API Key Required</strong></p>
-    <p class="muted" style="margin-top:8px;">Please get a free API key from <a href="https://aistudio.google.com/" target="_blank" rel="noopener">aistudio.google.com</a> to use the AI solver.</p>
+    <p><strong>AI Features</strong></p>
+    <div id="setupApiKeyOptions" style="margin-top:8px;">
+        <input type="radio" id="setupUseDefault" name="apiKeyChoiceSetup" value="default" checked>
+        <label for="setupUseDefault" class="muted">Use the default shared API key</label>
+        <br>
+        <input type="radio" id="setupUseCustom" name="apiKeyChoiceSetup" value="custom" style="margin-top:5px;">
+        <label for="setupUseCustom" class="muted">Use my own Gemini API key</label>
+    </div>
+    <div id="setupCustomApiKeyContainer" style="display:none; margin-top:10px;">
+        <p class="muted" style="margin-bottom:5px;">Get a free key from <a href="https://aistudio.google.com/" target="_blank" rel="noopener">aistudio.google.com</a>.</p>
+        <input type="password" id="setupApiKey" placeholder="Paste your key here">
+    </div>
   </div>
-  <label style="margin-top:12px;">Your Gemini API Key</label>
-  <input type="password" id="setupApiKey" placeholder="Paste your key here to enable AI features">
+
   <button class="btn" data-action="accept-welcome" style="margin-top:15px;">Start Solving</button>
 </template>
 
@@ -570,12 +619,17 @@ init();
     </div>
     <div class="col card">
       <h2>AI Settings</h2>
-      <div class="warning-box">
-        <p><strong>API Key Required</strong></p>
-        <p class="muted">Get a free API key from <a href="https://aistudio.google.com/" target="_blank" rel="noopener">aistudio.google.com</a>.</p>
+      <div id="settingsApiKeyOptions">
+          <input type="radio" id="settingsUseDefault" name="apiKeyChoiceSettings" value="default">
+          <label for="settingsUseDefault">Use the default shared API key</label>
+          <br>
+          <input type="radio" id="settingsUseCustom" name="apiKeyChoiceSettings" value="custom" style="margin-top:5px;">
+          <label for="settingsUseCustom">Use my own Gemini API key</label>
       </div>
-      <label style="margin-top:12px;">Your Gemini API Key</label>
-      <input type="password" id="apiKeyInput" placeholder="Paste your key here">
+      <div id="settingsCustomApiKeyContainer" style="display:none; margin-top:10px;">
+          <p class="muted" style="margin-bottom:5px;">Get a free key from <a href="https://aistudio.google.com/" target="_blank" rel="noopener">aistudio.google.com</a>.</p>
+          <input type="password" id="apiKeyInput" placeholder="Paste your key here">
+      </div>
     </div>
   </div>
   <div class="row">
@@ -595,7 +649,7 @@ init();
       <button class="btn small" data-action="reset-app" style="background:#ef4444;">Reset App</button>
     </div>
   </div>
-    <div class="card" style="text-align:center;">
+  <div class="card" style="text-align:center;">
       <button class="btn" data-action="save-settings">Save All Settings</button>
   </div>
 </template>
