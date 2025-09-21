@@ -69,53 +69,24 @@
     margin-top: 12px; padding: 10px; border-radius: 8px;
     background-color: rgba(79,70,229,0.05); border-left: 3px solid var(--primary);
   }
+  .chat-bubble { padding: 8px 12px; border-radius: 10px; margin-bottom: 8px; max-width: 90%; word-wrap: break-word; }
+  .chat-bubble.user { background: #eef2ff; color: #4338ca; margin-left: auto; }
+  .chat-bubble.model { background: rgba(79,70,229,0.05); }
+  .tag { background: rgba(0,0,0,0.05); color: var(--muted); padding: 2px 8px; border-radius: 6px; font-size: 0.8rem; display: inline-block; margin-right: 5px; }
+  .favorite-btn { background: transparent; border: none; cursor: pointer; font-size: 1.2rem; padding: 0 5px; opacity: 0.6; }
+  .favorite-btn.favorited { opacity: 1; color: #facc15; }
 
   /* Media Query for Mobile Optimization */
   @media (max-width: 768px) {
-    header {
-      flex-wrap: wrap; /* Allow header items to wrap onto the next line */
-      gap: 16px;
-    }
-
-    nav {
-      width: 100%;
-      order: 3; /* Make nav appear last in the header flow */
-      overflow-x: auto; /* Allow nav to be scrolled horizontally */
-      padding-bottom: 5px; /* Add some space for the scrollbar */
-    }
-    
-    .brand {
-        width: 100%;
-    }
-
-    .btn[data-action="share"] {
-      display: none; /* Hide share button on mobile to save space */
-    }
-
-    .row {
-      flex-direction: column; /* Stack columns vertically */
-      gap: 0;
-    }
-
-    .container {
-      margin: 12px auto;
-      padding: 0 10px;
-    }
-
-    h2 {
-      font-size: 1.5rem; /* Adjust heading sizes for mobile */
-    }
-
-    .btn, input, select, textarea {
-        padding-top: 12px; /* Increase padding for easier tapping */
-        padding-bottom: 12px;
-    }
-
-    #toast {
-        bottom: 80px; /* Position toast above mobile OS navigation */
-        width: 90%;
-        box-sizing: border-box;
-    }
+    header { flex-wrap: wrap; gap: 16px; }
+    nav { width: 100%; order: 3; overflow-x: auto; padding-bottom: 5px; }
+    .brand { width: 100%; }
+    .btn[data-action="share"] { display: none; }
+    .row { flex-direction: column; gap: 0; }
+    .container { margin: 12px auto; padding: 0 10px; }
+    h2 { font-size: 1.5rem; }
+    .btn, input, select, textarea { padding-top: 12px; padding-bottom: 12px; }
+    #toast { bottom: 80px; width: 90%; box-sizing: border-box; }
   }
 </style>
 
@@ -158,17 +129,15 @@
 import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
 
 /* -------------------------------------------
-  App State and Core Functions
+ App State and Core Functions
 ------------------------------------------- */
-// Default API Key constant
 const DEFAULT_API_KEY = 'AIzaSyDFkqehdCYrwxkwR8TSicSLHZrMnAJ3XXY';
 
 const App = {
   pages: ['welcomeScreen', 'homePage','solvePage','historyPage','settingsPage'],
-  dataKey: 'qsolve_data_v3',
-  userKey: 'qsolve_user_v3',
+  dataKey: 'qsolve_data_v5', // Incremented version to avoid old data format issues
+  userKey: 'qsolve_user_v5',
   history: [],
-  // Added 'useDefaultKey' to settings
   settings: { name: 'Student', avatar:'', theme:'default', fontSize:16, apiKey: '', useDefaultKey: true },
 };
 
@@ -193,7 +162,6 @@ function showPage(id) {
   const page = document.getElementById(id);
   if(!page) return;
   
-  // FIX: Always render from template to prevent blank pages on reset
   const template = document.getElementById(id + "Template");
   if (template) {
     page.innerHTML = template.innerHTML;
@@ -230,26 +198,33 @@ function escapeHtml(s) {
   return el.innerHTML;
 }
 
+function formatAIResponse(text) {
+    return escapeHtml(text)
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        .replace(/\n/g, '<br>');
+}
+
 /* -------------------------------------------
-  AI and OCR Functions
+ AI and OCR Functions
 ------------------------------------------- */
-async function solveWithGemini(prompt) {
-  // UPDATED: Logic to choose between default and custom key
+async function getAIResponse(prompt, history) {
   const apiKey = App.settings.useDefaultKey ? DEFAULT_API_KEY : App.settings.apiKey;
 
   if (!apiKey) {
-    showToast('API Key is not set. Please choose the default or add your own in Settings.', 'error');
+    showToast('API Key is not set. Please add one in Settings.', 'error');
     return "Error: API Key is required.";
   }
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-    const result = await model.generateContent(prompt);
+    const chat = model.startChat({ history });
+    const result = await chat.sendMessage(prompt);
     return (await result.response).text();
   } catch (error) {
     console.error("Gemini API Error:", error);
     showToast(`AI Error: ${error.message}. Check console.`, 'error');
-    return `AI Error: Could not get a response. Is your key and model name correct?`;
+    return `AI Error: Could not get a response. Is your key correct?`;
   }
 }
 
@@ -272,7 +247,7 @@ async function runOcr(source) {
 }
 
 /* -------------------------------------------
-  UI Rendering and Update Functions
+ UI Rendering and Update Functions
 ------------------------------------------- */
 function updateHeaderUI() {
     document.getElementById('greetingSmall').innerText = App.settings.name ? `Hi, ${App.settings.name}` : 'Welcome';
@@ -290,13 +265,11 @@ function updateHeaderUI() {
 }
 
 function updateSettingsPageUI() {
-    // UPDATED: This function now handles the new radio buttons
     document.getElementById('userName').value = App.settings.name || '';
     document.getElementById('avatarPreview').src = App.settings.avatar || 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
     document.getElementById('themeSelect').value = App.settings.theme;
     document.getElementById('fontSizeRange').value = App.settings.fontSize;
     
-    // Set API key input and radio buttons
     document.getElementById('apiKeyInput').value = App.settings.apiKey || '';
     const useCustom = !App.settings.useDefaultKey;
     document.getElementById('settingsUseDefault').checked = !useCustom;
@@ -312,11 +285,12 @@ function refreshHomePage() {
     if (recentList) {
         recentList.innerHTML = '';
         if (App.history.length === 0) {
-            recentList.innerHTML = `<p class="muted">Your recently saved questions will appear here.</p>`;
+            recentList.innerHTML = `<p class="muted">Your saved conversations will appear here.</p>`;
             return;
         }
         App.history.slice(0, 3).forEach(item => {
-            recentList.innerHTML += `<div class="question-card">${escapeHtml(item.question.slice(0, 80))}...</div>`;
+            const title = escapeHtml(item.title.slice(0, 80));
+            recentList.innerHTML += `<div class="question-card">${title}...</div>`;
         });
     }
 }
@@ -333,8 +307,22 @@ function renderDetectedQuestions(questions, fullText) {
         <div class="question-card">
             <p class="question-text">${questionHtml}</p>
             <div class="ai-answer-container" style="display: none;"></div>
-            <div class="button-container" style="margin-top:10px;">
-              <button class="btn" data-action="solve-question">Find Answer with AI</button>
+            <div style="display:flex; gap: 8px; align-items:center; margin-top:10px;">
+                <select class="ai-personality-select" style="flex-grow:0; width: auto;">
+                    <option value="">Default Answer</option>
+                    <option value="\\n\\nPlease explain this simply, like I'm 10 years old.">Explain Simply</option>
+                    <option value="\\n\\nPlease summarize the key points in a bulleted list.">Summarize</option>
+                    <option value="\\n\\nPlease provide a detailed, step-by-step guide.">Step-by-Step</option>
+                </select>
+                <button class="btn" data-action="start-conversation">Find Answer</button>
+            </div>
+            <div class="conversation-controls" style="display:none; margin-top:10px;">
+                <textarea class="follow-up-input" rows="2" placeholder="Ask a follow-up question..."></textarea>
+                <button class="btn" data-action="ask-follow-up" style="margin-top:5px;">Send</button>
+            </div>
+             <div class="save-controls" style="display:none; margin-top:12px;">
+                <input type="text" class="tags-input" placeholder="Add tags, comma separated...">
+                <button class="btn small secondary" data-action="save-conversation" style="margin-top:5px;">Save to History</button>
             </div>
         </div>`;
     });
@@ -345,25 +333,40 @@ function refreshHistoryList() {
     if (!historyList) return;
     historyList.innerHTML = '';
     const searchTerm = (document.getElementById('historySearch')?.value || '').toLowerCase();
-    
+    const showFavorites = document.getElementById('showFavoritesToggle')?.checked;
+
     const filteredHistory = App.history.filter(item => {
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = item.answer;
-        const answerText = (tempDiv.textContent || tempDiv.innerText || "").toLowerCase();
-        const questionText = (item.question || "").toLowerCase();
-        return questionText.includes(searchTerm) || answerText.includes(searchTerm);
+        if (showFavorites && !item.isFavorited) return false;
+        
+        // FIX: Access the text content correctly from the new data structure
+        const conversationText = item.conversation.map(turn => turn.parts[0].text).join(' ').toLowerCase();
+        const tagsText = (item.tags || []).join(' ').toLowerCase();
+        
+        return conversationText.includes(searchTerm) || tagsText.includes(searchTerm);
     });
 
     if (filteredHistory.length === 0) {
-        historyList.innerHTML = `<p class="muted">No questions saved yet.</p>`;
+        historyList.innerHTML = `<p class="muted">No conversations found.</p>`;
         return;
     }
     filteredHistory.forEach(item => {
+        const tagsHtml = (item.tags || []).map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join('');
+        const conversationHtml = item.conversation.map(turn => {
+            const bubbleClass = turn.role === 'user' ? 'user' : 'model';
+            // FIX: Access the text content correctly from the new data structure
+            return `<div class="chat-bubble ${bubbleClass}">${formatAIResponse(turn.parts[0].text)}</div>`;
+        }).join('');
+        
         historyList.innerHTML += `<div class="question-card">
-            <h4>Question:</h4>
-            <p>${escapeHtml(item.question)}</p>
-            <h4 style="margin-top:12px;">Saved Answer:</h4>
-            <div class="ai-answer-container" style="display:block;">${item.answer}</div>
+            <div style="display:flex; justify-content:space-between; align-items:start;">
+                <h4>${escapeHtml(item.title)}</h4>
+                <button class="favorite-btn ${item.isFavorited ? 'favorited' : ''}" data-action="toggle-favorite" data-id="${item.id}">★</button>
+            </div>
+            <div>${tagsHtml}</div>
+            <div class="ai-answer-container" style="display:block; margin-top:12px;">${conversationHtml}</div>
+            <div style="margin-top:10px;">
+                <button class="btn small secondary" data-action="copy-conversation" data-id="${item.id}">Copy</button>
+            </div>
         </div>`;
     });
     if (window.MathJax) MathJax.typesetPromise && MathJax.typesetPromise();
@@ -383,7 +386,7 @@ function handleAvatarUpload(event) {
 }
 
 /* -------------------------------------------
-  Initialization and Event Handling
+ Initialization and Event Handling
 ------------------------------------------- */
 function init() {
   loadAll();
@@ -392,21 +395,21 @@ function init() {
     const target = e.target.closest('[data-action]');
     if (!target) return;
     const action = target.dataset.action;
+    const card = target.closest('.question-card');
     
     if (action === 'navigate') showPage(target.dataset.page);
     
     if (action === 'accept-welcome') {
-      // UPDATED: Logic to save the user's API key choice
       App.settings.name = document.getElementById('setupName').value.trim() || 'Student';
       const useDefault = document.getElementById('setupUseDefault').checked;
       App.settings.useDefaultKey = useDefault;
       if (!useDefault) {
           App.settings.apiKey = document.getElementById('setupApiKey').value.trim();
       } else {
-          App.settings.apiKey = ''; // Clear custom key if default is chosen
+          App.settings.apiKey = '';
       }
       saveAll();
-      localStorage.setItem('qsolve_first_time_v3', 'true');
+      localStorage.setItem(`qsolve_first_time_${App.dataKey.split('_')[2]}`, 'true');
       showPage('homePage');
     }
 
@@ -418,44 +421,65 @@ function init() {
         else showToast('Please select a file or paste text.', 'error');
     }
     
-    if (action === 'solve-question') {
-        const card = target.closest('.question-card');
+    if (action === 'start-conversation' || action === 'ask-follow-up') {
         if (!card) return;
-        
-        const questionText = card.querySelector('.question-text').innerText;
         const answerContainer = card.querySelector('.ai-answer-container');
-        const buttonContainer = card.querySelector('.button-container');
+        const questionTextElem = card.querySelector('.question-text');
+        const followUpInput = card.querySelector('.follow-up-input');
         
+        let prompt;
+        let existingHistory = JSON.parse(card.dataset.conversationHistory || '[]');
+
+        if (action === 'start-conversation') {
+            const personalitySelect = card.querySelector('.ai-personality-select');
+            prompt = questionTextElem.innerText + (personalitySelect.value || '');
+            answerContainer.innerHTML = `<div class="chat-bubble user">${formatAIResponse(prompt)}</div>`;
+        } else {
+            prompt = followUpInput.value.trim();
+            if (!prompt) return;
+            answerContainer.innerHTML += `<div class="chat-bubble user">${formatAIResponse(prompt)}</div>`;
+            followUpInput.value = '';
+        }
+        
+        answerContainer.style.display = 'block';
         target.textContent = 'Thinking...';
         target.disabled = true;
+
+        const aiResponse = await getAIResponse(prompt, existingHistory);
         
-        const aiResponse = await solveWithGemini("Please provide a clear and comprehensive answer to the following question. Use markdown and LaTeX for formatting where appropriate:\n\n" + questionText);
-        
-        let formattedResponse = escapeHtml(aiResponse)
-            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-            .replace(/\*(.*?)\*/g, '<em>$1</em>')
-            .replace(/\n/g, '<br>');
+        // FIX: Use the robust, object-based format for 'parts'
+        existingHistory.push({ role: 'user', parts: [{ text: prompt }] });
+        existingHistory.push({ role: 'model', parts: [{ text: aiResponse }] });
+        card.dataset.conversationHistory = JSON.stringify(existingHistory);
 
-        answerContainer.innerHTML = formattedResponse;
-        answerContainer.style.display = 'block';
+        answerContainer.innerHTML += `<div class="chat-bubble model">${formatAIResponse(aiResponse)}</div>`;
+        if (window.MathJax) MathJax.typesetPromise?.([answerContainer]);
 
-        if (window.MathJax) MathJax.typesetPromise && MathJax.typesetPromise([answerContainer]);
-
-        buttonContainer.innerHTML = `<button class="btn small secondary" data-action="save-ai-answer">Save to History</button>`;
+        if (action === 'start-conversation') {
+            target.parentElement.style.display = 'none';
+            card.querySelector('.conversation-controls').style.display = 'block';
+            card.querySelector('.save-controls').style.display = 'block';
+        }
+        target.textContent = action === 'start-conversation' ? 'Find Answer' : 'Send';
+        target.disabled = false;
     }
     
-    if (action === 'save-ai-answer') {
-        const card = target.closest('.question-card');
+    if (action === 'save-conversation') {
         if (!card) return;
+        const history = JSON.parse(card.dataset.conversationHistory || '[]');
+        if (history.length === 0) return;
 
-        const questionText = card.querySelector('.question-text').innerText;
-        const answerHtml = card.querySelector('.ai-answer-container').innerHTML;
+        const tagsInput = card.querySelector('.tags-input');
+        const tags = tagsInput.value.split(',').map(t => t.trim()).filter(Boolean);
 
         const historyItem = {
             id: 'q-' + Date.now(),
-            question: questionText,
-            answer: answerHtml,
-            createdAt: new Date().toISOString()
+            // FIX: Access the text content correctly for the title
+            title: history[0].parts[0].text.slice(0, 100),
+            isFavorited: false,
+            tags: tags,
+            createdAt: new Date().toISOString(),
+            conversation: history
         };
 
         App.history.unshift(historyItem);
@@ -463,18 +487,41 @@ function init() {
         
         target.textContent = 'Saved ✓';
         target.disabled = true;
-        showToast('Answer saved to history!');
+        showToast('Conversation saved to history!');
+    }
+
+    if (action === 'toggle-favorite') {
+        const itemId = target.dataset.id;
+        const item = App.history.find(i => i.id === itemId);
+        if (item) {
+            item.isFavorited = !item.isFavorited;
+            saveAll();
+            refreshHistoryList();
+        }
+    }
+
+    if (action === 'copy-conversation') {
+        const itemId = target.dataset.id;
+        const item = App.history.find(i => i.id === itemId);
+        if (item) {
+            // FIX: Access the text content correctly and use the correct newline character
+            const textToCopy = item.conversation.map(turn => `${turn.role.toUpperCase()}: ${turn.parts[0].text}`).join('\n\n');
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                showToast('Conversation copied!');
+            }, () => {
+                showToast('Failed to copy.', 'error');
+            });
+        }
     }
     
     if (action === 'save-settings') {
-      // UPDATED: Logic to save the user's API key choice
       App.settings.name = document.getElementById('userName').value.trim();
       const useDefault = document.getElementById('settingsUseDefault').checked;
       App.settings.useDefaultKey = useDefault;
        if (!useDefault) {
           App.settings.apiKey = document.getElementById('apiKeyInput').value.trim();
       } else {
-          App.settings.apiKey = ''; // Clear custom key if default is chosen
+          App.settings.apiKey = '';
       }
       saveAll();
       updateHeaderUI();
@@ -484,17 +531,28 @@ function init() {
     if (action === 'reset-app') {
         if (confirm('This will permanently delete all your data. Are you sure?')) {
             localStorage.clear();
-            
             App.history = [];
-            // Reset settings to include the new 'useDefaultKey'
             App.settings = { name: 'Student', avatar:'', theme:'default', fontSize:16, apiKey: '', useDefaultKey: true };
-            
             applyTheme();
             updateHeaderUI(); 
-            
             showPage('welcomeScreen');
             showToast('App has been reset.');
         }
+    }
+
+    if (action === 'export-data') {
+        const data = {
+            settings: App.settings,
+            history: App.history
+        };
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `qsolve_backup_${Date.now()}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast('Data exported!');
     }
 
     if (action === 'share') {
@@ -509,13 +567,35 @@ function init() {
   document.body.addEventListener('change', e => {
     const target = e.target;
     if (target.id === 'avatarUpload') handleAvatarUpload(e);
+    if (target.id === 'importDataInput') {
+        const file = target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const data = JSON.parse(event.target.result);
+                if (data.settings && data.history) {
+                    App.settings = data.settings;
+                    App.history = data.history;
+                    saveAll();
+                    loadAll(); 
+                    showPage('settingsPage');
+                    showToast('Data imported successfully!');
+                } else {
+                    showToast('Invalid backup file format.', 'error');
+                }
+            } catch (err) {
+                showToast('Failed to parse backup file.', 'error');
+            }
+        };
+        reader.readAsText(file);
+    }
     if (target.id === 'themeSelect') {
         App.settings.theme = target.value;
         applyTheme();
         saveAll();
     }
     
-    // ADDED: Event handler to show/hide the custom API key input field
     if (target.name === 'apiKeyChoiceSetup' || target.name === 'apiKeyChoiceSettings') {
         const isSetup = target.name === 'apiKeyChoiceSetup';
         const containerId = isSetup ? 'setupCustomApiKeyContainer' : 'settingsCustomApiKeyContainer';
@@ -532,12 +612,12 @@ function init() {
         document.documentElement.style.fontSize = App.settings.fontSize + 'px';
         saveAll();
       }
-      if (e.target.id === 'historySearch') {
+      if (e.target.id === 'historySearch' || e.target.id === 'showFavoritesToggle') {
         refreshHistoryList();
       }
   });
 
-  const firstTime = localStorage.getItem('qsolve_first_time_v3') !== 'true';
+  const firstTime = localStorage.getItem(`qsolve_first_time_${App.dataKey.split('_')[2]}`) !== 'true';
   showPage(firstTime ? 'welcomeScreen' : 'homePage');
 }
 
@@ -580,7 +660,7 @@ init();
     </div>
   </div>
   <div class="card">
-    <h3>Recent Questions</h3>
+    <h3>Recent Conversations</h3>
     <div id="recentList"></div>
   </div>
 </template>
@@ -598,9 +678,13 @@ init();
 
 <template id="historyPageTemplate">
   <div class="card">
-      <h2>Question History</h2>
-      <p class="muted">All your saved questions and their AI-generated answers.</p>
-      <input type="search" id="historySearch" placeholder="Search in questions and answers..." style="margin-bottom:10px;">
+      <h2>Conversation History</h2>
+      <p class="muted">All your saved conversations and their AI-generated answers.</p>
+      <input type="search" id="historySearch" placeholder="Search conversations..." style="margin-bottom:10px;">
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+        <input type="checkbox" id="showFavoritesToggle" style="width: auto; margin:0;">
+        <label for="showFavoritesToggle" class="muted">Show Favorites Only</label>
+      </div>
       <div id="historyList" style="margin-top:12px;"></div>
   </div>
 </template>
@@ -644,9 +728,14 @@ init();
       <input id="fontSizeRange" type="range" min="12" max="20" step="1">
     </div>
     <div class="col card">
-      <h2>Danger Zone</h2>
-      <p class="muted">This will permanently delete all your saved data.</p>
-      <button class="btn small" data-action="reset-app" style="background:#ef4444;">Reset App</button>
+      <h2>Data Management</h2>
+      <p class="muted">Backup or restore your data, or reset the app completely.</p>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;">
+        <button class="btn small" data-action="export-data">Export Data</button>
+        <input type="file" id="importDataInput" accept=".json" class="hidden">
+        <label for="importDataInput" class="btn small secondary">Import Data</label>
+        <button class="btn small" data-action="reset-app" style="background:#ef4444;">Reset App</button>
+      </div>
     </div>
   </div>
   <div class="card" style="text-align:center;">
