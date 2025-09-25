@@ -93,6 +93,7 @@
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
 <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<script src="https://sdk.generative.ai/js/sdk.js"></script>
 </head>
 <body>
 
@@ -125,9 +126,7 @@
 
 <div id="toast"></div>
 
-<script type="module">
-import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
-
+<script>
 /* -------------------------------------------
  App State and Core Functions
 ------------------------------------------- */
@@ -216,7 +215,8 @@ async function getAIResponse(prompt, history) {
     return "Error: API Key is required.";
   }
   try {
-    const genAI = new GoogleGenerativeAI(apiKey);
+    // MODIFIED: Changed how the GoogleGenerativeAI class is accessed
+    const genAI = new google.generativeai.GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     const chat = model.startChat({ history });
     const result = await chat.sendMessage(prompt);
