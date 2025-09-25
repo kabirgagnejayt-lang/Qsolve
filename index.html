@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
+<meta charset="utf--8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Q Solve — Homework Helper (Mobile Optimized)</title>
 
@@ -134,7 +134,7 @@ const DEFAULT_API_KEY = 'AIzaSyDFkqehdCYrwxkwR8TSicSLHZrMnAJ3XXY';
 
 const App = {
   pages: ['welcomeScreen', 'homePage','solvePage','historyPage','settingsPage'],
-  dataKey: 'qsolve_data_v5', // Incremented version to avoid old data format issues
+  dataKey: 'qsolve_data_v5',
   userKey: 'qsolve_user_v5',
   history: [],
   settings: { name: 'Student', avatar:'', theme:'default', fontSize:16, apiKey: '', useDefaultKey: true },
@@ -215,7 +215,6 @@ async function getAIResponse(prompt, history) {
     return "Error: API Key is required.";
   }
   try {
-    // MODIFIED: Changed how the GoogleGenerativeAI class is accessed
     const genAI = new google.generativeai.GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     const chat = model.startChat({ history });
@@ -338,7 +337,6 @@ function refreshHistoryList() {
     const filteredHistory = App.history.filter(item => {
         if (showFavorites && !item.isFavorited) return false;
         
-        // FIX: Access the text content correctly from the new data structure
         const conversationText = item.conversation.map(turn => turn.parts[0].text).join(' ').toLowerCase();
         const tagsText = (item.tags || []).join(' ').toLowerCase();
         
@@ -353,7 +351,6 @@ function refreshHistoryList() {
         const tagsHtml = (item.tags || []).map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join('');
         const conversationHtml = item.conversation.map(turn => {
             const bubbleClass = turn.role === 'user' ? 'user' : 'model';
-            // FIX: Access the text content correctly from the new data structure
             return `<div class="chat-bubble ${bubbleClass}">${formatAIResponse(turn.parts[0].text)}</div>`;
         }).join('');
         
@@ -447,7 +444,6 @@ function init() {
 
         const aiResponse = await getAIResponse(prompt, existingHistory);
         
-        // FIX: Use the robust, object-based format for 'parts'
         existingHistory.push({ role: 'user', parts: [{ text: prompt }] });
         existingHistory.push({ role: 'model', parts: [{ text: aiResponse }] });
         card.dataset.conversationHistory = JSON.stringify(existingHistory);
@@ -474,7 +470,6 @@ function init() {
 
         const historyItem = {
             id: 'q-' + Date.now(),
-            // FIX: Access the text content correctly for the title
             title: history[0].parts[0].text.slice(0, 100),
             isFavorited: false,
             tags: tags,
@@ -504,7 +499,6 @@ function init() {
         const itemId = target.dataset.id;
         const item = App.history.find(i => i.id === itemId);
         if (item) {
-            // FIX: Access the text content correctly and use the correct newline character
             const textToCopy = item.conversation.map(turn => `${turn.role.toUpperCase()}: ${turn.parts[0].text}`).join('\n\n');
             navigator.clipboard.writeText(textToCopy).then(() => {
                 showToast('Conversation copied!');
@@ -617,6 +611,7 @@ function init() {
       }
   });
 
+  // This is the logic that handles new vs. returning users
   const firstTime = localStorage.getItem(`qsolve_first_time_${App.dataKey.split('_')[2]}`) !== 'true';
   showPage(firstTime ? 'welcomeScreen' : 'homePage');
 }
