@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Q Solve — Homework Helper</title>
+<title>Q Solve — Homework Helper (Web)</title>
 
 <style>
   /* STYLES FROM THE "MOBILE VERSION" */
@@ -53,13 +53,16 @@
   h3 { font-size: 1.25rem; font-weight: 600; }
   p { color:var(--muted); line-height:1.5; margin: 4px 0; }
   .muted { color:var(--muted); font-size:0.9rem; }
+  a { color: var(--primary); text-decoration: none; }
+  a:hover { text-decoration: underline; }
   input,textarea,select,button { font-size:1rem; font-family: inherit; }
   input,select,textarea { width:100%; box-sizing:border-box; padding:10px 12px; border-radius:8px; border:1px solid #cbd5e1; background:var(--bg); color:var(--text); }
   .btn { background:var(--primary); color:white; border:none; padding:10px 16px; border-radius:8px; cursor:pointer; font-weight: 600; transition: background-color 0.2s; }
   .btn:hover { opacity: 0.9; }
   .btn.secondary { background:var(--primary-light); color:var(--primary-dark); }
   .avatar-preview { width:72px; height:72px; border-radius:50%; object-fit:cover; background: var(--primary-light); }
-  .footer { text-align:center; font-size:0.8rem; color:var(--muted); padding:16px 0; }
+  .footer { text-align:center; font-size:0.9rem; color:var(--muted); padding:16px 0; }
+  .footer-links { display: flex; justify-content: center; gap: 16px; margin-top: 12px; flex-wrap: wrap; }
   .hidden { display:none !important; }
   blockquote { border-left: 4px solid var(--primary); padding-left: 16px; margin: 16px 0; font-style: italic; }
   ul, ol { padding-left: 20px; }
@@ -125,7 +128,15 @@
   <div id="historyPage" class="page"></div>
   <div id="settingsPage" class="page"></div>
   <div id="releaseNotesPage" class="page"></div>
-  <div class="footer card">Q Solve. Local data stored on this device.</div>
+  <div class="footer card">
+    <div>Q Solve by Kabir Gagneja. Local data stored on this device.</div>
+    <div class="footer-links">
+        <a href="https://whatsapp.com/channel/0029VbB4DCr9Gv7Qj7NgCX2t" target="_blank">WhatsApp</a>
+        <a href="https://www.youtube.com/@KabirInvents" target="_blank">YouTube</a>
+        <a href="https://play.google.com/store/apps/developer?id=Kabir+Gagneja+Invents" target="_blank">Play Store</a>
+        <a href="https://kabirgagnejayt-lang.github.io/Qsolve/" target="_blank">Website</a>
+    </div>
+  </div>
 </div>
 
 <div id="toast"></div>
@@ -140,9 +151,9 @@ const DEFAULT_API_KEY = 'AIzaSyDFkqehdCYrwxkwR8TSicSLHZrMnAJ3XXY';
 
 const App = {
   pages: ['welcomeScreen', 'homePage','solvePage','historyPage','settingsPage', 'releaseNotesPage'],
-  dataKey: 'qsolve_data_v6', // Incremented version
-  userKey: 'qsolve_user_v6',
-  releaseKey: 'qsolve_release_seen_v6',
+  dataKey: 'qsolve_data_v7', // Incremented version
+  userKey: 'qsolve_user_v7',
+  releaseKey: 'qsolve_release_seen_v7',
   history: [],
   settings: { name: 'Student', avatar:'', theme:'default', fontSize:16, apiKey: '', useDefaultKey: true },
 };
@@ -178,7 +189,6 @@ function showPage(id) {
   const activeBtn = document.querySelector(`.nav-btn[data-page="${id}"]`);
   if (activeBtn) activeBtn.classList.add('active');
   
-  // Hide header on welcome/release notes
   const header = document.querySelector('header');
   header.style.display = (id === 'welcomeScreen' || id === 'releaseNotesPage') ? 'none' : 'flex';
 
@@ -789,11 +799,16 @@ init();
         <p>Set your name and avatar, and choose your theme. We designed a crisp <strong>Light Blue Theme</strong> and a beautiful, eye-saving <strong>Dark Theme</strong> for those late-night study sessions.</p>
     </div>
     <div class="card">
-        <h2>🚀 The Future</h2>
-        <p>This is just the starting line. We're already working on features like structured knowledge libraries and multi-device sync.</p>
-        <blockquote>
-            <p>This app is a tool, but you are the architect of your own knowledge. We're honored to provide a better set of blueprints. We can't wait to see what you will learn.</p>
-        </blockquote>
+        <h2>🚀 The Future & My Other Projects</h2>
+        <p>This is just the starting line. While we build new features, feel free to check out my other work:</p>
+        <ul>
+            <li><a href="https://whatsapp.com/channel/0029VbB4DCr9Gv7Qj7NgCX2t" target="_blank"><strong>WhatsApp Channel</strong></a> - Get updates and join the community.</li>
+            <li><a href="https://www.youtube.com/@KabirInvents" target="_blank"><strong>YouTube (@KabirInvents)</strong></a> - Watch tutorials and project showcases.</li>
+            <li><a href="https://play.google.com/store/apps/developer?id=Kabir+Gagneja+Invents" target="_blank"><strong>Google Play Store</strong></a> - Discover all my published apps.</li>
+            <li><a href="https://kabirgagnejayt-lang.github.io/Qsolve/" target="_blank"><strong>Q Solve Main Website</strong></a> - The official web portal for this app.</li>
+            <li><a href="https://kabirgagnejayt-lang.github.io/Qsolve_Mobile_App/" target="_blank"><strong>Q Solve Mobile App Site</strong></a> - The landing page for the mobile experience.</li>
+             <li><a href="https://play.google.com/store/apps/details?id=appinventor.ai_kabirgagnejayt.GradeWithAI" target="_blank"><strong>GradeWithAI App</strong></a> - Another one of my helpful tools for students.</li>
+        </ul>
         <p style="margin-top:16px;">With sincere gratitude,</p>
         <p><strong>The Q Solve Team</strong></p>
         
