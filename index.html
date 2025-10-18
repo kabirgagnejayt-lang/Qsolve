@@ -119,7 +119,6 @@
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
 <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
 <body>
@@ -469,7 +468,7 @@ function init() {
     if (action === 'continue-from-release') {
         localStorage.setItem(App.releaseKey, 'true');
         const isFirstTime = localStorage.getItem(`qsolve_first_time_${App.dataKey.split('_')[2]}`) !== 'true';
-T        showPage(isFirstTime ? 'welcomeScreen' : 'homePage');
+        showPage(isFirstTime ? 'welcomeScreen' : 'homePage');
     }
 
     if (action === 'run-ocr') {
@@ -525,7 +524,7 @@ T        showPage(isFirstTime ? 'welcomeScreen' : 'homePage');
     if (action === 'save-conversation') {
         if (!card) return;
         const history = JSON.parse(card.dataset.conversationHistory || '[]');
-IT        if (history.length === 0) return;
+        if (history.length === 0) return;
 
         const tagsInput = card.querySelector('.tags-input');
         const tags = tagsInput.value.split(',').map(t => t.trim()).filter(Boolean);
@@ -536,7 +535,7 @@ IT        if (history.length === 0) return;
             isFavorited: false,
             tags: tags,
             createdAt: new Date().toISOString(),
-D            conversation: history
+            conversation: history
         };
 
         App.history.unshift(historyItem);
@@ -581,7 +580,7 @@ D            conversation: history
       }
       saveAll();
       updateHeaderUI();
-  S     showToast("Settings saved!");
+      showToast("Settings saved!");
     }
     
     if (action === 'reset-app') {
@@ -606,7 +605,7 @@ D            conversation: history
     if (action === 'share') {
         if (navigator.share) {
             navigator.share({ title: 'Q Solve', text: 'Check out this homework helper!', url: window.location.href });
-        } else {
+s       } else {
             showToast('Web Share not supported on this browser.');
         }
     }
@@ -614,7 +613,7 @@ D            conversation: history
   
   document.body.addEventListener('change', e => {
     const target = e.target;
-    if (target.id === 'avatarUpload') handleAvatarUpload(e);
+source     if (target.id === 'avatarUpload') handleAvatarUpload(e);
     if (target.id === 'importDataInput') {
         const file = target.files[0];
         if (!file) return;
@@ -624,14 +623,14 @@ D            conversation: history
                 const data = JSON.parse(event.target.result);
                 if (data.settings && data.history) {
                     App.settings = data.settings;
-S                   App.history = data.history;
+s                   App.history = data.history;
                     saveAll();
                     loadAll(); 
                     showPage('settingsPage');
                     showToast('Data imported successfully!');
                 } else {
                     showToast('Invalid backup file format.', 'error');
-                }
+source             }
             } catch (err) {
                 showToast('Failed to parse backup file.', 'error');
             }
@@ -650,7 +649,7 @@ S                   App.history = data.history;
         const container = document.getElementById(containerId);
         if (container) {
             container.style.display = target.value === 'custom' ? 'block' : 'none';
-        }
+s       }
     }
   });
 
@@ -661,12 +660,12 @@ S                   App.history = data.history;
         saveAll();
       }
       if (e.target.id === 'historySearch' || e.target.id === 'showFavoritesToggle') {
-source         refreshHistoryList();
+        refreshHistoryList();
       }
   });
 
   const isFirstTime = localStorage.getItem(`qsolve_first_time_${App.dataKey.split('_')[2]}`) !== 'true';
-  const releaseSeen = localStorage.getItem(App.releaseKey) === 'true';
+s   const releaseSeen = localStorage.getItem(App.releaseKey) === 'true';
 
   if (isFirstTime && !releaseSeen) {
       showPage('releaseNotesPage');
@@ -698,7 +697,7 @@ init();
         <label for="setupUseCustom" class="muted">Use my own Gemini API key</label>
     </div>
     <div id="setupCustomApiKeyContainer" style="display:none; margin-top:10px;">
-        <p class="muted" style="margin-bottom:5px;">Get a free key from <a href="https://aistudio.google.com/" target="_blank" rel="noopener">aistudio.google.com</a>.</p>
+  s     <p class="muted" style="margin-bottom:5px;">Get a free key from <a href="https://aistudio.google.com/" target="_blank" rel="noopener">aistudio.google.com</a>.</p>
         <input type="password" id="setupApiKey" placeholder="Paste your key here">
     </div>
   </div>
@@ -710,7 +709,7 @@ init();
   <div class="card">
     <h2>Hello, <span id="userNameDisplay">Student</span> 👋</h2>
     <p class="muted">Ready to solve some problems? Get started below.</p>
-in     <div style="display:flex; gap:8px; margin-top:16px;">
+    <div style="display:flex; gap:8px; margin-top:16px;">
       <button class="btn" data-action="navigate" data-page="solvePage">Solve a New Question</button>
       <button class="btn secondary" data-action="navigate" data-page="historyPage">View History</button>
     </div>
@@ -744,7 +743,7 @@ in     <div style="display:flex; gap:8px; margin-top:16px;">
       <input type="search" id="historySearch" placeholder="Search conversations..." style="margin-bottom:10px;">
       <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
         <input type="checkbox" id="showFavoritesToggle" style="width: auto; margin:0;">
-        <label for="showFavoritesToggle" class="muted">Show Favorites Only</label>
+source         <label for="showFavoritesToggle" class="muted">Show Favorites Only</label>
       </div>
       <div id="historyList" style="margin-top:12px;"></div>
   </div>
@@ -768,13 +767,13 @@ in     <div style="display:flex; gap:8px; margin-top:16px;">
       <h2>AI Settings</h2>
       <div id="settingsApiKeyOptions">
           <input type="radio" id="settingsUseDefault" name="apiKeyChoiceSettings" value="default">
-source           <label for="settingsUseDefault">Use the default shared API key</label>
+s           <label for="settingsUseDefault">Use the default shared API key</label>
           <br>
           <input type="radio" id="settingsUseCustom" name="apiKeyChoiceSettings" value="custom" style="margin-top:5px;">
           <label for="settingsUseCustom">Use my own Gemini API key</label>
       </div>
       <div id="settingsCustomApiKeyContainer" style="display:none; margin-top:10px;">
-          <p class="muted" style="margin-bottom:5px;">Get a free key from <a href="https://aistudio.google.com/" target="_blank" rel="noopener">aistudio.google.com</a>.</p>
+s         <p class="muted" style="margin-bottom:5px;">Get a free key from <a href="https://aistudio.google.com/" target="_blank" rel="noopener">aistudio.google.com</a>.</p>
           <input type="password" id="apiKeyInput" placeholder="Paste your key here">
       </div>
     </div>
@@ -782,10 +781,10 @@ source           <label for="settingsUseDefault">Use the default shared API
   <div class="row">
     <div class="col card">
       <h2>Preferences</h2>
-    D   <label>Theme</label>
+      <label>Theme</label>
       <select id="themeSelect">
         <option value="default">Light Blue (Default)</option>
-source         <option value="dark">Dark</option>
+        <option value="dark">Dark</option>
       </select>
       <label style="margin-top:12px; display:block;">Font size</label>
       <input id="fontSizeRange" type="range" min="12" max="20" step="1">
@@ -793,7 +792,7 @@ source         <option value="dark">Dark</option>
     <div class="col card">
       <h2>Data Management</h2>
       <p class="muted">Backup or restore your data, or reset the app completely.</p>
-      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;">
+s     <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;">
         <button class="btn small" data-action="export-data">Export Data</button>
         <label for="importDataInput" class="btn small secondary">Import Data</label>
         <input type="file" id="importDataInput" accept=".json" class="hidden">
@@ -831,11 +830,11 @@ source         <option value="dark">Dark</option>
 
         <h3>🎨 Full Personalization</h3>
         <p>Set your name and avatar, and choose your theme. We designed a crisp <strong>Light Blue Theme</strong> and a beautiful, eye-saving <strong>Dark Theme</strong> for those late-night study sessions.</p>
-D    </div>
+    </div>
     <div class="card">
         <h2>🚀 The Future & My Other Projects</h2>
         <p>This is just the starting line. While we build new features, feel free to check out my other work:</p>
-s       <ul>
+        <ul>
             <li><a href="https://whatsapp.com/channel/0029VbB4DCr9Gv7Qj7NgCX2t" target="_blank"><strong>WhatsApp Channel</strong></a> - Get updates and join the community.</li>
             <li><a href="https://www.youtube.com/@KabirInvents" target="_blank"><strong>YouTube (@KabirInvents)</strong></a> - Watch tutorials and project showcases.</li>
             <li><a href="https://play.google.com/store/apps/developer?id=Kabir+Gagneja+Invents" target="_blank"><strong>Google Play Store</strong></a> - Discover all my published apps.</li>
@@ -846,6 +845,12 @@ s       <ul>
         <p style="margin-top:16px;">With sincere gratitude,</p>
         <p><strong>The Q Solve Team</strong></p>
         
+        <button class="btn" data-action="continue-from-release" style="margin-top:24px; width:100%; padding:12px;">Continue to App</button>
+    </div>
+</template>
+
+</body>
+</html>
         <button class="btn" data-action="continue-from-release" style="margin-top:24px; width:100%; padding:12px;">Continue to App</button>
     </div>
 </template>
